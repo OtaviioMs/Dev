@@ -1,5 +1,6 @@
 import express from "express";
 import monitorRoutes from "./routes/monitor.routes";
+import { runMonitorCheck } from "./jobs/monitor.job";
 
 const app = express();
 
@@ -14,5 +15,13 @@ app.get("/", (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("DevPulse rodando em http://localhost:3000");
+  console.log("DevPulse está rodando em http://localhost:3000");
+
+  runMonitorCheck();
+
+  setInterval(() => {
+    runMonitorCheck().catch((error) => {
+      console.error("[JOB ERROR]", error);
+    });
+  }, 30000);
 });
