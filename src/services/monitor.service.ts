@@ -6,7 +6,17 @@ export async function checkUrl(url: string): Promise<{
   const start = Date.now();
 
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 10000);
+
+    const response = await fetch(url, {
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
 
     const responseTime = Date.now() - start;
 
@@ -15,6 +25,7 @@ export async function checkUrl(url: string): Promise<{
       statusCode: response.status,
       responseTime
     };
+
   } catch (error) {
     const responseTime = Date.now() - start;
 
