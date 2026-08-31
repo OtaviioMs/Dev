@@ -4,6 +4,8 @@ import { MonitorHistory } from "../types/monitor-history";
 
 export const history: MonitorHistory[] = [];
 
+const MAX_HISTORY = 1000;
+
 export async function runMonitorCheck() {
   console.log("[JOB] Executando verificação...");
   console.log(`[JOB] Monitores cadastrados: ${monitors.length}`);
@@ -22,6 +24,10 @@ history.push({
     responseTime: result.responseTime,
     checkedAt: new Date().toISOString()
 });
+
+if (history.length > MAX_HISTORY) {
+    history.shift();
+}
 
     console.log(
       `[MONITOR] ${monitor.name} → ${monitor.status} (${result.responseTime}ms)`
