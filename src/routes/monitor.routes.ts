@@ -4,17 +4,31 @@ import { Router } from "express";
 import { Monitor } from "../types/monitor";
 import { checkUrl } from "../services/monitor.service";
 import { history } from "../jobs/monitor.job";
+import { pool } from "../database/db";
 
 const router = Router();
 
 export const monitors: Monitor[] = [];
 console.log("[ROUTES] Array de monitores criado");
 
-router.get("/monitors", (req, res) => {
-  res.json({
-    monitors
-  });
+router.get("/monitors", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM monitors ORDER BY id ASC"
+        );
+
+        res.json({
+            monitors: result.rows
+        });
+    } catch (error) {
+        console.error("[DB] Erro ao buscar monitores:", error);
+
+        res.status(500).json({
+            message: "Erro ao buscar monitores"
+        });
+    }
 });
+
 router.get("/monitors/:id", (req, res) => {
   const id = Number(req.params.id);
 
@@ -57,67 +71,63 @@ router.put("/monitors/:id", async (req, res) => {
             message: "Monitor não encontrado"
         });
     }
-
-    monitor.name = name;
-    monitor.url = url;
-
-    const result = await checkUrl(url);
-
-    monitor.status = result.status;
-
-    res.json({
-        ...monitor,
-        statusCode: result.statusCode,
-        responseTime: result.responseTime
-    });
 });
-router.post("/monitors", async (req, res) => {
-  const { name, url } = req.body;
+ router.post("/monitors", async (req, res) => {
+    const { name, url } = req.body;
 
-  if (!name || !url) {
-    return res.status(400).json({
-        message: "Nome e URL são obrigatórios"
-    });
-}
-try {
-    new URL(url);
-} catch {
-    return res.status(400).json({
-        message: "URL inválida"
-    });
-}
-const existingMonitor = monitors.find(
-    (monitor) => monitor.url === url
-);
+    if (!name || !url) {
+        return res.status(400).json({
+            message: "Nome e URL são obrigatórios"
+        });
+    }
 
-if (existingMonitor) {
-    return res.status(409).json({
-        message: "Este monitor já está cadastrado",
-        monitor: existingMonitor
-    });
-}
-  const monitor: Monitor = {
-    id: monitors.length + 1,
-    name,
-    url,
-    status: "pending"
-  };
+    try {
+        new URL(url);
+    } catch {
+        return res.status(400).json({
+            message: "URL inválida"
+        });
+    }
 
-  const result = await checkUrl(url);
+    try {
+        const existingMonitor = await pool.query(
+            "SELECT * FROM monitors WHERE url = $1",
+            [url]
+        );
 
-monitor.status = result.status;
+        if (existingMonitor.rows.length > 0) {
+            return res.status(409).json({
+                message: "Este monitor já está cadastrado",
+                monitor: existingMonitor.rows[0]
+            });
+        }
 
-  monitors.push(monitor);
+        const result = await checkUrl(url);
 
-  console.log("[ROUTES] Monitor adicionado:", monitor);
-console.log("[ROUTES] Total de monitores:", monitors.length);
+        const dbResult = await pool.query(
+            `INSERT INTO monitors (name, url, status)
+             VALUES ($1, $2, $3)
+             RETURNING *`,
+            [name, url, result.status]
+        );
 
-  res.status(201).json({
-  ...monitor,
-  statusCode: result.statusCode,
-  responseTime: result.responseTime
+        console.log("[DB] Monitor adicionado:", dbResult.rows[0]);
+
+        res.status(201).json({
+            monitor: dbResult.rows[0],
+            statusCode: result.statusCode,
+            responseTime: result.responseTime
+        });
+
+    } catch (error) {
+        console.error("[DB] Erro ao adicionar monitor:", error);
+
+        res.status(500).json({
+            message: "Erro ao adicionar monitor"
+        });
+    }
 });
-});
+
 router.get("/monitors/:id/history", (req, res) => {
     const id = Number(req.params.id);
 

@@ -1,8 +1,13 @@
 import express from "express";
+import cors from "cors";
 import monitorRoutes from "./routes/monitor.routes";
 import { runMonitorCheck } from "./jobs/monitor.job";
 
 const app = express();
+
+app.use(cors({
+  origin: "http://localhost:5173"
+}));
 
 app.use(express.json());
 
