@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
 interface Monitor {
   id: number;
   name: string;
@@ -200,14 +210,67 @@ function App() {
                     : "-"}
                 </strong>
               </div>
+            </div>
 
               <div className="details-card">
                 <span>Verificações</span>
 
-                <strong>
-                  {history.length}
-                </strong>
-              </div>
+{/* GRÁFICO DE TEMPO DE RESPOSTA */}
+
+<div className="history-section">
+  <div className="section-header">
+    <div>
+      <h2>Tempo de resposta</h2>
+      <p>Desempenho das últimas verificações</p>
+    </div>
+  </div>
+
+  <div style={{ width: "100%", height: 300 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart
+        data={history}
+        margin={{
+          top: 10,
+          right: 20,
+          left: 0,
+          bottom: 10,
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+
+        <XAxis
+          dataKey="checkedAt"
+          tickFormatter={(value) =>
+            new Date(value).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          }
+        />
+
+        <YAxis />
+
+       <Tooltip
+  labelFormatter={(value) =>
+    new Date(String(value)).toLocaleString("pt-BR")
+  }
+/>
+
+        <Line
+          type="monotone"
+          dataKey="responseTime"
+          stroke="#3b82f6"
+          strokeWidth={3}
+          dot={{ r: 4 }}
+          connectNulls
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
+  
+</div>
+
+ 
 
             </div>
 

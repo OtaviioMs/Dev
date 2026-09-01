@@ -1,9 +1,6 @@
-
-
 import { Router } from "express";
 import { Monitor } from "../types/monitor";
 import { checkUrl } from "../services/monitor.service";
-import { history } from "../jobs/monitor.job";
 import { pool } from "../database/db";
 
 const router = Router();
@@ -128,14 +125,35 @@ router.put("/monitors/:id", async (req, res) => {
     }
 });
 
-router.get("/monitors/:id/history", (req, res) => {
-    const id = Number(req.params.id);
+router.get("/monitors/:id/history", async (req, res) => {
+  const id = Number(req.params.id);
 
-    const monitorHistory = history.filter(
-        (item) => item.monitorId === id
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        monitor_id AS "monitorId",
+        status,
+        status_code AS "statusCode",
+        response_time AS "responseTime",
+        checked_at AS "checkedAt"
+      FROM monitor_history
+      WHERE monitor_id = $1
+      ORDER BY checked_at ASC
+      LIMIT 1000
+      `,
+      [id]
     );
 
-    res.json(monitorHistory);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("[DB] Erro ao buscar histórico:", error);
+
+    res.status(500).json({
+      message: "Erro ao buscar histórico"
+    });
+  }
 });
+
 
 export default router;

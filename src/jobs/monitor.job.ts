@@ -49,6 +49,22 @@ await pool.query(
   ]
 );
 
+await pool.query(
+  `
+  INSERT INTO monitor_history
+    (monitor_id, status, status_code, response_time, checked_at)
+  VALUES
+    ($1, $2, $3, $4, $5)
+  `,
+  [
+    monitor.id,
+    result.status,
+    result.statusCode,
+    result.responseTime,
+    new Date()
+  ]
+);
+
 if (history.length > MAX_HISTORY) {
     history.shift();
 }
