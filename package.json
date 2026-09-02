@@ -4,8 +4,10 @@
   "description": "Sistema de monitoramento de APIs e serviços",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx watch src/server.ts"
-  },
+  "dev": "tsx watch src/server.ts",
+  "db:init": "tsx scripts/db-init.ts"
+},
+
   "keywords": [
     "monitoring",
     "api",
